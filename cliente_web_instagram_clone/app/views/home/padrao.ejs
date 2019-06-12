@@ -15,20 +15,71 @@
 		<link href="css/style.css" rel="stylesheet">
 
 		<script>
-			$(document).ready(function(){
+			$(document).ready(() => {
 
-				$('#btn_incluir').click(function(){
-					$('#container_timeline').hide();
-					$('#container_form').show();
-				});
+				function carrega_postagens(){
+					const xhr = new XMLHttpRequest()
+					xhr.open("GET", "http://localhost:8080/api")
+					xhr.onload = () => {
+						if(xhr.status === 200){
+							const data = $.parseJSON(xhr.responseText)
+							data.forEach(info => {
+								$("#container_timeline").append(
+									'<div class="publicacao">'+
+										'<span class="titulo">'+ 
+											info.titulo +
+										'</span>'+
+										'<img src="http://localhost:8080/imagens/' + info.url_imagem + '">'+
+									'</div>'	
+								)
+							})
+						}
+					}
 
-				$('#btn-cancelar-publicacao').click(function(){
-					$('#container_timeline').show();
-					$('#container_form').hide();
-					return false;
-				});
+					xhr.send()
+				}
 
-			});
+				carrega_postagens()
+				$('#btn_incluir').click(() => {
+					$('#container_timeline').hide()
+					$('#container_form').show()
+				})
+
+				$('#btn-cancelar-publicacao').click(() => {
+					$('#container_timeline').show()
+					$('#container_form').hide()
+					return false
+				})
+
+				$("#btn-publicar").click(() => {
+
+					//criar um formdata
+					const formData = new FormData()
+					const arquivo = document.getElementById("arquivo").files[0]
+					const titulo  = document.getElementById("titulo").value
+
+					formData.append("arquivo", arquivo)
+					formData.append("titulo", titulo)
+
+					//criar objeto xmlhttprequest
+					const xhr = new XMLHttpRequest()
+
+					//fazer a verificação de mudanças de estado
+					xhr.onreadstatechange = () => {
+						if(xhr.readyState == 4){
+							const response = xhr.responseText
+							document.getElementById("mensagem").innerHTML = reposta
+						}
+					}
+
+					//envio do nosos request
+					xhr.open("POST", "http://localhost:8080/api")
+					xhr.send(formData)
+					
+
+				})
+
+			})
 		</script>
 
 	</head>

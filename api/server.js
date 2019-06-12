@@ -1,9 +1,15 @@
-const express = require('express'), bodyParser = require('body-parser'), mongodb = require('mongodb'),
-    objectId = require('mongodb').ObjectID
+const   express = require('express'), 
+        bodyParser = require('body-parser'), 
+        multparty = require('connect-multiparty'),
+        mongodb = require('mongodb'),
+        objectId = require('mongodb').ObjectID, 
+        fs = require('fs');
+
 const app = express() 
 
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
+app.use(multparty())
 
 app.listen(8080)
 const db = new mongodb.Db(
@@ -20,24 +26,41 @@ app.get('/', (req, res) => {
 //URI + VERBO HTTP
 //INSERT
 app.post('/api', (req, res) => {
-    const dados = req.body
 
-    db.open((err,mongoclient) => {
-        mongoclient.collection('postagens', (err,collection) => {
-            collection.insert(dados, (err, records) => {
-                if(err){
-                    res.json(err)
-                }else{
-                    res.json(records)
-                }
-                mongoclient.close()
+    res.setHeader('Access-Control-Allow-Origin','*')
+    
+
+    const path_origem = req.files.arquivo.path
+    const path_destino = './uploads/' + req.files.arquivo.originalFilename
+    fs.rename(path_origem, path_destino, (err) => {
+        if(err){
+            res.status(500).json({error: err})
+        }else{
+
+            const dados = {
+                url_imagem: req.files.arquivo.originalFilename,
+                titulo: req.body.titulo
+            }
+
+            db.open((err,mongoclient) => {
+                mongoclient.collection('postagens', (err,collection) => {
+                    collection.insert(dados, (err, records) => {
+                        if(err){
+                            res.json(err)
+                        }else{
+                            res.json(records)
+                        }
+                        mongoclient.close()
+                    })
+                })
             })
-        })
+        }
     })
 })
 
 //SELECT *
 app.get('/api', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin','*')
     db.open((err,mongoclient) => {
         mongoclient.collection('postagens', (err,collection) => {
             collection.find().toArray((err, results) => {
@@ -68,6 +91,18 @@ app.get('/api/:id', (req, res) => {
             })
         })
     })
+})
+
+app.get('/imagens/:imagem', (req, res) => {
+  const img = req.params.imagem  
+  fs.readFile('./uploads/'+img, (err, content) => {
+    if(err){
+        res.status(400).json(err)
+        return
+    }
+    res.writeHead(200, {'content-type' : 'image/jpg'})
+    res.end(content) //escreve o parâmetro dentro do result
+  })
 })
 
 // PUT by id (update)
