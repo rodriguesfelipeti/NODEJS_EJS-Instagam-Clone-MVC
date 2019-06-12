@@ -10,6 +10,13 @@ const app = express()
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 app.use(multparty())
+app.use((req,res, next) => {
+    res.setHeader('Access-Control-Allow-Origin','*')
+    res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,DELETE') //GET, POST, PUT, DELETE (HABILITA CHAAMDAS INDEPENDENTE DA ORIGEM)
+    res.setHeader('Access-Control-Allow-Headers','content-type')
+    res.setHeader('Access-Control-Allow-Credentials',true)
+    next()
+})
 
 app.listen(8080)
 const db = new mongodb.Db(
@@ -27,7 +34,7 @@ app.get('/', (req, res) => {
 //INSERT
 app.post('/api', (req, res) => {
 
-    res.setHeader('Access-Control-Allow-Origin','*')
+    
     
 
     const path_origem = req.files.arquivo.path
@@ -60,7 +67,6 @@ app.post('/api', (req, res) => {
 
 //SELECT *
 app.get('/api', (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin','*')
     db.open((err,mongoclient) => {
         mongoclient.collection('postagens', (err,collection) => {
             collection.find().toArray((err, results) => {
@@ -107,14 +113,21 @@ app.get('/imagens/:imagem', (req, res) => {
 
 // PUT by id (update)
 app.put('/api/:id', (req, res) => {
-    id = objectId(req.params.id)
+    res.setHeader('Access-Control-Allow-Origin','*')
 
+    id = objectId(req.params.id)
     db.open((err,mongoclient) => {
         mongoclient.collection('postagens', (err,collection) => {
             collection.update(
-                { _id: id },
-                { $set : req.body },
-                {},
+                { _id : id },
+                { 
+                    $push : {
+                        comentarios: {
+                            id_comentario : new objectId(),
+                            comentario: req.body.comentario
+                        }
+                    } 
+                },
                 (err, records) => {
                     if(err){
                         res.json(err)
@@ -122,7 +135,7 @@ app.put('/api/:id', (req, res) => {
                         res.json(records)
                     }
                 }
-            )
+            ) 
             mongoclient.close()
         })
     })
