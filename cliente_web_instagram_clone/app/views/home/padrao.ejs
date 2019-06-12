@@ -23,6 +23,8 @@
 					xhr.onload = () => {
 						if(xhr.status === 200){
 							const data = $.parseJSON(xhr.responseText)
+
+
 							data.forEach(info => {
 								$("#container_timeline").append(
 									'<div class="publicacao">'+
@@ -30,18 +32,48 @@
 											info.titulo +
 										'</span>'+
 										'<img src="http://localhost:8080/imagens/' + info.url_imagem + '">'+
+										'<div class="comentarios" id="comentarios_'+ info._id +'">'+
+
+										'</div>'+ 
 										'<div class="comentar">'+
 											'<input type="text" class="form-control input_comentario" id="postagem_'+info._id+'" placeholder="Adicione um comentário"'+
 										'</div>'+
 										'<button type="button" class="btn btn-default btn_postagem" value="'+info._id+'">Comentar</button>'+
 									'</div>'	
 								)
+
+								if(info.comentarios != undefined){
+									const comentarios = info.comentarios
+									comentarios.forEach(comentario => {
+										$("#comentarios_"+ info._id).append(
+											'<div class="txt_comentario">'+
+												'<button type="button" class="btn btn-default btn_remover_postagem" value="'+ comentario.id_comentario +'">X</button>'+ 
+												comentario.comentario + 
+											'</div>'
+										)
+									});
+								}
 							})
+
+							$('.btn_remover_postagem').click(function(){
+								const id_comentario = this.value
+								const xhr = new XMLHttpRequest()
+								xhr.open("DELETE", "http://localhost:8080/api/" + id_comentario)
+								xhr.setRequestHeader('Content-Type','application/json')
+								xhr.onload = () => {
+									if(xhr.status === 200){
+										window.location.href = "/home"
+									}
+								}
+
+								xhr.send()
+							})
+
+
 							$('.btn_postagem').click(function(){
 								const id = this.value
 								const id_input_comentario = 'postagem_' + id
 								const comentario = $("#" + id_input_comentario).val()
-
 								const xhr = new XMLHttpRequest()
 								xhr.open("PUT", "http://localhost:8080/api/" + id)
 								xhr.setRequestHeader('Content-Type','application/json')
